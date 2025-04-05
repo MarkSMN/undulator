@@ -9,25 +9,22 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #000; /* Black background */
-        }
-        
-        /* Improved rotation styles */
-        body.rotate-mode {
             background-color: #000;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             width: 100vw;
-            overflow: hidden;
+            height: 100vh;
         }
         
-        body.rotate-mode canvas {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-90deg);
+        /* Default canvas style */
+        canvas {
             display: block;
+        }
+        
+        /* Rotated canvas style */
+        body.rotate-mode canvas {
+            transform: rotate(-90deg);
         }
     </style>
 </head>
@@ -49,33 +46,43 @@
     
     <!-- Setup rotation handling if needed -->
     <script>
+        // Override createCanvas to ensure proper positioning
+        const originalCreateCanvas = window.createCanvas;
+        window.createCanvas = function() {
+            const canvas = originalCreateCanvas.apply(this, arguments);
+            // Center canvas by default
+            canvas.elt.style.margin = "auto";
+            return canvas;
+        };
+
         // Only run this code if rotation is enabled
         if (shouldRotate) {
             // Store original functions
             const originalSetup = window.setup;
-            const originalDraw = window.draw;
             const originalMousePressed = window.mousePressed;
             const originalMouseDragged = window.mouseDragged;
             const originalWindowResized = window.windowResized;
             
             // Override setup function
             window.setup = function() {
-                // For a rotated canvas, we swap width and height
-                // but maintain the aspect ratio to prevent skewing
-                const screenRatio = windowWidth / windowHeight;
+                // For a rotated view, use the opposite dimensions
                 let canvasWidth, canvasHeight;
                 
-                // If the screen is wider than tall after rotation
-                if (screenRatio < 1) {
-                    canvasWidth = windowHeight;
+                // Swap dimensions for rotation
+                if (windowWidth > windowHeight) {
+                    // Landscape orientation
+                    canvasWidth = windowHeight; 
                     canvasHeight = windowWidth;
                 } else {
-                    // Scale to fill the screen while maintaining aspect ratio
+                    // Portrait orientation
                     canvasWidth = windowHeight;
                     canvasHeight = windowWidth;
                 }
                 
                 let canvas = createCanvas(canvasWidth, canvasHeight);
+                
+                // Position the canvas in the center
+                canvas.position((windowWidth - canvasWidth) / 2, (windowHeight - canvasHeight) / 2);
                 
                 // Set focus attributes
                 canvas.elt.setAttribute('tabindex', '0');
@@ -84,7 +91,7 @@
                     this.focus();
                 });
                 
-                // Call your original setup code
+                // Call original setup code
                 if (typeof originalSetup === 'function') {
                     originalSetup();
                 } else {
@@ -101,22 +108,26 @@
                 const canvas = document.querySelector('canvas');
                 const rect = canvas.getBoundingClientRect();
                 
-                // Calculate center of canvas
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
+                // Get coordinates relative to canvas
+                const relX = mouseX - rect.left;
+                const relY = mouseY - rect.top;
                 
-                // Get mouse position relative to center
-                const relX = mouseX - centerX;
-                const relY = mouseY - centerY;
+                // Find center of canvas
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
                 
-                // Rotate 90 degrees clockwise (to compensate for the -90deg canvas rotation)
-                const rotatedX = relY;
-                const rotatedY = -relX;
+                // Calculate position relative to center
+                const fromCenterX = relX - centerX;
+                const fromCenterY = relY - centerY;
                 
-                // Translate back to canvas coordinates
+                // Rotate 90 degrees clockwise
+                const rotatedX = fromCenterY;
+                const rotatedY = -fromCenterX;
+                
+                // Convert back to canvas coordinates
                 return {
-                    x: width/2 + rotatedX,
-                    y: height/2 + rotatedY
+                    x: centerX + rotatedX,
+                    y: centerY + rotatedY
                 };
             }
             
@@ -174,19 +185,28 @@
             
             // Handle window resizing
             window.windowResized = function() {
-                const screenRatio = windowWidth / windowHeight;
+                // Recalculate canvas dimensions
                 let canvasWidth, canvasHeight;
                 
-                // If the screen is wider than tall after rotation
-                if (screenRatio < 1) {
+                // Swap dimensions for rotation
+                if (windowWidth > windowHeight) {
+                    // Landscape orientation
                     canvasWidth = windowHeight;
                     canvasHeight = windowWidth;
                 } else {
+                    // Portrait orientation
                     canvasWidth = windowHeight;
                     canvasHeight = windowWidth;
                 }
                 
+                // Resize and reposition the canvas
                 resizeCanvas(canvasWidth, canvasHeight);
+                const canvas = document.querySelector('canvas');
+                if (canvas) {
+                    canvas.style.position = 'absolute';
+                    canvas.style.left = `${(windowWidth - canvasWidth) / 2}px`;
+                    canvas.style.top = `${(windowHeight - canvasHeight) / 2}px`;
+                }
                 
                 // Call original handler if it exists
                 if (typeof originalWindowResized === 'function') {
