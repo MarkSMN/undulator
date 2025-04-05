@@ -5,33 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Undulator</title>
     <style>
-        body {
+        html, body {
             margin: 0;
             padding: 0;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
             background-color: #000;
-            width: 100vw;
-            height: 100vh;
         }
         
         canvas {
             display: block;
         }
         
+        /* Simplified rotation approach */
+        body.rotate-mode #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center center;
+        }
+        
         body.rotate-mode canvas {
             transform: rotate(-90deg);
             transform-origin: center center;
-            position: absolute;
-            width: 100vh !important;
-            height: 100vw !important;
-            top: 50%;
-            left: 50%;
-            transform-origin: center;
-            transform: translate(-50%, -50%) rotate(-90deg);
+            /* Set minimum dimensions to ensure the canvas covers the viewport */
+            min-width: 100vh;
+            min-height: 100vw;
         }
     </style>
 </head>
 <body>
+    <!-- Create a div to contain and position the canvas -->
+    <div id="canvas-container"></div>
+    
     <!-- Load p5.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     
@@ -47,41 +59,44 @@
         }
     </script>
     
+    <!-- Override p5.js default canvas creation to force parent container -->
+    <script>
+        // Store the original createCanvas function
+        p5.prototype._originalCreateCanvas = p5.prototype.createCanvas;
+        
+        // Override createCanvas to force our container as parent
+        p5.prototype.createCanvas = function() {
+            const canvas = this._originalCreateCanvas.apply(this, arguments);
+            const container = document.getElementById('canvas-container');
+            container.innerHTML = '';
+            container.appendChild(this.canvas);
+            return canvas;
+        };
+    </script>
+    
     <!-- Setup rotation handling if needed -->
     <script>
         // Only run this code if rotation is enabled
         if (shouldRotate) {
             // Store original functions
             const originalSetup = window.setup;
+            const originalDraw = window.draw;
             const originalMousePressed = window.mousePressed;
             const originalMouseDragged = window.mouseDragged;
             const originalWindowResized = window.windowResized;
             
             // Override setup function
             window.setup = function() {
-                // For a rotated view, use the full window size
-                // For portrait mode (vertical TV), we want to use 100% of the width and height
-                let canvas = createCanvas(windowHeight, windowWidth);
+                // Create canvas with swapped dimensions 
+                // Make it much larger than needed to ensure coverage
+                let canvas = createCanvas(
+                    Math.max(windowHeight, windowWidth) * 1.5, 
+                    Math.max(windowHeight, windowWidth) * 1.5
+                );
                 
-                // Ensure the canvas fills the viewport
-                canvas.style('width', '100vh');
-                canvas.style('height', '100vw');
-                
-                // Call your original setup code
+                // Call original setup
                 if (typeof originalSetup === 'function') {
-                    // Store original windowWidth/windowHeight values
-                    const origWidth = windowWidth;
-                    const origHeight = windowHeight;
-                    
-                    // Swap width/height for the duration of the setup call
-                    windowWidth = windowHeight;
-                    windowHeight = origWidth;
-                    
                     originalSetup();
-                    
-                    // Restore original values
-                    windowWidth = origWidth;
-                    windowHeight = origHeight;
                 } else {
                     // If no original setup, do the basics
                     generateComposition();
@@ -96,14 +111,26 @@
                 const canvas = document.querySelector('canvas');
                 const rect = canvas.getBoundingClientRect();
                 
-                // Calculate relative position within canvas bounding box
-                const relX = (mouseX - rect.left) / rect.width;
-                const relY = (mouseY - rect.top) / rect.height;
+                // Calculate center of canvas
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
                 
-                // Map to rotated canvas coordinates
+                // Get mouse position relative to center
+                const relX = mouseX - centerX;
+                const relY = mouseY - centerY;
+                
+                // Rotate 90 degrees clockwise
+                const rotatedX = relY;
+                const rotatedY = -relX;
+                
+                // Scale to canvas size
+                const scaleX = width / rect.height;
+                const scaleY = height / rect.width;
+                
+                // Return canvas coordinates
                 return {
-                    x: height * relY,
-                    y: width * (1 - relX)
+                    x: (rotatedX * scaleX) + width/2,
+                    y: (rotatedY * scaleY) + height/2
                 };
             }
             
@@ -161,27 +188,15 @@
             
             // Handle window resizing
             window.windowResized = function() {
-                // Resize the canvas to fill the viewport
-                resizeCanvas(windowHeight, windowWidth);
-                
-                document.querySelector('canvas').style.width = '100vh';
-                document.querySelector('canvas').style.height = '100vw';
+                // Make canvas much larger than screen for full coverage
+                resizeCanvas(
+                    Math.max(windowHeight, windowWidth) * 1.5, 
+                    Math.max(windowHeight, windowWidth) * 1.5
+                );
                 
                 // Call original handler if it exists
                 if (typeof originalWindowResized === 'function') {
-                    // Store original values
-                    const origWidth = windowWidth;
-                    const origHeight = windowHeight;
-                    
-                    // Swap for the duration of the call
-                    windowWidth = windowHeight;
-                    windowHeight = origWidth;
-                    
                     originalWindowResized();
-                    
-                    // Restore original values
-                    windowWidth = origWidth;
-                    windowHeight = origHeight;
                 }
             };
         }
