@@ -12,15 +12,36 @@
             background-color: #000; /* Black background */
         }
         
-        /* Add rotation styles that will be enabled with URL parameter */
+        /* Improved rotation styles */
+        body.rotate-mode {
+            background-color: #000; /* Ensure black background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        
         body.rotate-mode canvas {
             transform: rotate(-90deg);
             transform-origin: center center;
+            max-width: 100vh; /* Use viewport height as max width */
+            max-height: 100vw; /* Use viewport width as max height */
             position: absolute;
             top: 50%;
             left: 50%;
-            margin-left: -50vh; /* Half of height */
-            margin-top: -50vw;  /* Half of width */
+            transform-origin: center;
+            transform: translate(-50%, -50%) rotate(-90deg);
+        }
+        
+        /* Add a media query for vertical displays (like your TV) */
+        @media screen and (orientation: portrait) {
+            body.rotate-mode canvas {
+                /* Adjust for portrait screens specifically */
+                width: 100vw;
+                height: 100vh;
+            }
         }
     </style>
 </head>
