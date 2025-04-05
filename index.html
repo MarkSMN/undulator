@@ -14,34 +14,20 @@
         
         /* Improved rotation styles */
         body.rotate-mode {
-            background-color: #000; /* Ensure black background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: #000;
+            margin: 0;
+            padding: 0;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
         }
         
         body.rotate-mode canvas {
-            transform: rotate(-90deg);
-            transform-origin: center center;
-            max-width: 100vh; /* Use viewport height as max width */
-            max-height: 100vw; /* Use viewport width as max height */
             position: absolute;
             top: 50%;
             left: 50%;
-            transform-origin: center;
             transform: translate(-50%, -50%) rotate(-90deg);
-        }
-        
-        /* Add a media query for vertical displays (like your TV) */
-        @media screen and (orientation: portrait) {
-            body.rotate-mode canvas {
-                /* Adjust for portrait screens specifically */
-                width: 100vw;
-                height: 100vh;
-            }
+            display: block;
         }
     </style>
 </head>
@@ -67,14 +53,29 @@
         if (shouldRotate) {
             // Store original functions
             const originalSetup = window.setup;
+            const originalDraw = window.draw;
             const originalMousePressed = window.mousePressed;
             const originalMouseDragged = window.mouseDragged;
             const originalWindowResized = window.windowResized;
             
             // Override setup function
             window.setup = function() {
-                // Swap width and height for the rotated canvas
-                let canvas = createCanvas(windowHeight, windowWidth);
+                // For a rotated canvas, we swap width and height
+                // but maintain the aspect ratio to prevent skewing
+                const screenRatio = windowWidth / windowHeight;
+                let canvasWidth, canvasHeight;
+                
+                // If the screen is wider than tall after rotation
+                if (screenRatio < 1) {
+                    canvasWidth = windowHeight;
+                    canvasHeight = windowWidth;
+                } else {
+                    // Scale to fill the screen while maintaining aspect ratio
+                    canvasWidth = windowHeight;
+                    canvasHeight = windowWidth;
+                }
+                
+                let canvas = createCanvas(canvasWidth, canvasHeight);
                 
                 // Set focus attributes
                 canvas.elt.setAttribute('tabindex', '0');
@@ -85,19 +86,7 @@
                 
                 // Call your original setup code
                 if (typeof originalSetup === 'function') {
-                    // Store original windowWidth/windowHeight values
-                    const origWidth = windowWidth;
-                    const origHeight = windowHeight;
-                    
-                    // Swap width/height for the duration of the setup call
-                    windowWidth = origHeight;
-                    windowHeight = origWidth;
-                    
                     originalSetup();
-                    
-                    // Restore original values
-                    windowWidth = origWidth;
-                    windowHeight = origHeight;
                 } else {
                     // If no original setup, do the basics
                     generateComposition();
@@ -126,8 +115,8 @@
                 
                 // Translate back to canvas coordinates
                 return {
-                    x: rotatedX + windowHeight / 2,
-                    y: rotatedY + windowWidth / 2
+                    x: width/2 + rotatedX,
+                    y: height/2 + rotatedY
                 };
             }
             
@@ -185,24 +174,23 @@
             
             // Handle window resizing
             window.windowResized = function() {
-                // Swap dimensions for resize
-                resizeCanvas(windowHeight, windowWidth);
+                const screenRatio = windowWidth / windowHeight;
+                let canvasWidth, canvasHeight;
                 
-                // Call original handler with swapped dimensions
+                // If the screen is wider than tall after rotation
+                if (screenRatio < 1) {
+                    canvasWidth = windowHeight;
+                    canvasHeight = windowWidth;
+                } else {
+                    canvasWidth = windowHeight;
+                    canvasHeight = windowWidth;
+                }
+                
+                resizeCanvas(canvasWidth, canvasHeight);
+                
+                // Call original handler if it exists
                 if (typeof originalWindowResized === 'function') {
-                    // Store original values
-                    const origWidth = windowWidth;
-                    const origHeight = windowHeight;
-                    
-                    // Swap for the duration of the call
-                    windowWidth = origHeight;
-                    windowHeight = origWidth;
-                    
                     originalWindowResized();
-                    
-                    // Restore original values
-                    windowWidth = origWidth;
-                    windowHeight = origHeight;
                 }
             };
         }
