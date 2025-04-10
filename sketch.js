@@ -77,48 +77,42 @@ const zones = [
 ];
 
 const palettes = {
-       forestTones: {
+    jewelEarth: {
+        surroundingShape: [ 
+            [49, 32, 97],     // Deep purple (#312061)
+            [95, 85, 143],    // Medium purple (#5F558F)
+            [11, 46, 43],     // Deep forest green (#0B2E2B)
+            [61, 77, 40],     // Olive green (#3D4D28)
+            [148, 103, 40],   // Golden brown (#946728)
+            [212, 186, 131]   // Tan/gold (#D4BA83)
+        ]
+    },  
+  
+    blueOrange: {
+    surroundingShape: [
+        [173, 216, 230],  // Light Blue (#ADD8E6)
+        [135, 206, 235],  // Sky Blue (#87CEEB)
+        [176, 224, 230],  // Powder Blue (#B0E0E6)
+        [198, 226, 255],  // Alice Blue (#C6E2FF)
+        [210, 235, 250],  // Pale Blue (#D2EBFA)
+        [240, 248, 255],  // Azure (#F0F8FF)
+        [204, 85, 0],     // Burnt Orange (#CC5500)
+        [153, 51, 0]      // Deep Orange (#993300)
+    ]
+},
+  forestTones: {
         surroundingShape: [
             [22, 46, 37],     // Dark forest green (#162E25)
             [40, 122, 112],   // Teal (#287A70)
             [122, 87, 122],   // Mauve (#7A577A)
             [122, 109, 49],   // Olive (#7A6D31)
-            [30, 35, 46]      // Dark navy (#1E232E)
+            [30, 35, 46],     // Dark navy (#1E232E)
+            [195,183,130],
+            [190,163,190],
+            [121,171,156]          
         ]
     },
     
-    // From Image 2 - Warm earth and ocean
-    earthOcean: {
-        surroundingShape: [
-            [102, 36, 0],     // Deep brown (#662400)
-            [179, 63, 0],     // Burnt orange (#B33F00)
-            [255, 107, 26],   // Bright orange (#FF6B1A)
-            [0, 102, 99],     // Deep teal (#006663)
-            [0, 179, 173]     // Turquoise (#00B3AD)
-        ]
-    },
-    
-    // From Image 3 - Vibrant mix
-    vibrantMix: {
-        surroundingShape: [
-            [73, 212, 146],   // Mint (#49D492)
-            [123, 98, 171],   // Purple (#7B62AB)
-            [4, 39, 61],      // Dark blue (#04273D)
-            [33, 130, 197],   // Sky blue (#2182C5)
-            [239, 72, 42]     // Red-orange (#EF482A)
-        ]
-    },
-    
-    // From Image 4 - Cool purples and greens
-    purpleGreen: {
-        surroundingShape: [
-            [6, 1, 38],       // Deep navy (#060126)
-            [94, 83, 166],    // Medium purple (#5E53A6)
-            [86, 77, 140],    // Soft purple (#564D8C)
-            [77, 140, 104],   // Forest green (#4D8C68)
-            [81, 166, 94]     // Bright green (#51A65E)
-        ]
-    },
     warmNeutral: {
         surroundingShape: [
             [217, 72, 56],    // Coral red
@@ -129,27 +123,7 @@ const palettes = {
             [86, 82, 74]      // Brown gray
         ]
     },
-    naturalTones: {
-        surroundingShape: [
-            [238, 201, 69],   // Yellow
-            [67, 89, 39],     // Forest green
-            [15, 48, 41],     // Dark green
-            [76, 70, 118],    // Purple
-            [205, 178, 128],  // Tan
-            [139, 101, 39]    // Brown
-        ]
-    },
-     redBlue: {
-        surroundingShape: [
-            [217, 4, 43],     // Bright red (#D9042B)
-            [89, 2, 18],      // Dark red (#590212)
-            [242, 5, 68],     // Hot pink (#F20544)
-            [67, 147, 217],   // Blue (#4393D9)
-            [80, 180, 242]    // Light blue (#50B4F2)
-        ]
-    },
     
-    // From Image 2 - Orange gradient
     orangeGradient: {
         surroundingShape: [
             [242, 68, 5],     // Bright orange (#F24405)
@@ -160,27 +134,29 @@ const palettes = {
         ]
     },
     
-    // From Image 3 - Burgundy and pink
     burgundyPink: {
         surroundingShape: [
-            [89, 22, 28],     // Burgundy (#59161C)
+            [140, 45, 50],    // Lightened burgundy (#8C2D32)
             [242, 75, 106],   // Pink (#F24B6A)
             [166, 155, 146],  // Gray (#A69B92)
-            [191, 137, 105],  // Tan (#BF8969)
-            [217, 61, 61]     // Red (#D93D3D)
+            [220, 180, 160],  // Lightened tan (#DCB4A0)
+            [217, 61, 61],    // Red (#D93D3D)
+            [255, 182, 193]   // Soft pink (#FFB6C1)
         ]
     },
-  grayscale2: {
-    surroundingShape: [
-        [25, 25, 25],     // Near black
-        [75, 75, 75],     // Dark gray
-        [130, 130, 130],  // Medium gray
-        [180, 180, 180],  // Light gray
-        [230, 230, 230],  // Near white
-        [50, 50, 50]      // Another dark tone for variety
-    ]
-},
-  grayScale: {
+  
+    grayscale2: {
+        surroundingShape: [
+            [25, 25, 25],     // Near black
+            [75, 75, 75],     // Dark gray
+            [130, 130, 130],  // Medium gray
+            [180, 180, 180],  // Light gray
+            [230, 230, 230],  // Near white
+            [50, 50, 50]      // Another dark tone for variety
+        ]
+    },
+  
+    grayScale: {
         surroundingShape: [
             [38, 38, 38],     // Dark gray
             [77, 77, 77],     // Medium dark gray
@@ -190,14 +166,46 @@ const palettes = {
             [255, 255, 0]     // Yellow
         ]
     },
-    oceanForest: {
+    
+    // New palettes based on midcentury design
+    
+    eamesPalette: {
         surroundingShape: [
-            [25, 77, 25],    // Forest green
-            [25, 25, 153],   // Royal blue
-            [51, 102, 204],  // Sky blue
-            [48, 25, 89],    // Deep purple
-            [51, 51, 179],   // Medium blue
-            [0, 0, 128]      // Navy blue
+            [227, 65, 50],    // Eames red (#E34132)
+            [234, 172, 54],   // Mustard yellow (#EAAC36)
+            [60, 95, 156],    // Blue (#3C5F9C)
+            [33, 41, 47],     // Charcoal (#21292F)
+            [242, 242, 238]   // Off-white (#F2F2EE)
+        ]
+    },
+    
+    neutraTones: {
+        surroundingShape: [
+            [204, 197, 185],  // Light taupe (#CCC5B9)
+            [89, 87, 87],     // Dark gray (#595757)
+            [232, 221, 203],  // Cream (#E8DDCB)
+            [155, 175, 161],  // Sage green (#9BAFA1)
+            [240, 234, 214]   // Ivory (#F0EAD6)
+        ]
+    },
+    
+    pastelMid: {
+        surroundingShape: [
+            [241, 180, 187],  // Dusty rose (#F1B4BB)
+            [184, 215, 212],  // Mint (#B8D7D4)
+            [249, 220, 196],  // Peach (#F9DCC4)
+            [196, 169, 186],  // Lilac (#C4A9BA)
+            [95, 91, 97]      // Dark gray (#5F5B61)
+        ]
+    },
+    
+    scandiMid: {
+        surroundingShape: [
+            [242, 233, 228],  // Light cream (#F2E9E4)
+            [189, 154, 137],  // Wood tone (#BD9A89)
+            [119, 103, 93],   // Brown (#77675D)
+            [86, 121, 115],   // Teal green (#567973)
+            [67, 68, 71]      // Charcoal (#434447)
         ]
     }
 };
