@@ -13,7 +13,7 @@ let windVariation = 0.0;
 let mouseInfluence = 0.05;  // Subtle mouse influence
 let autoRegenerate = true; // Whether to automatically regenerate composition
 let lastRegenTime = 0; // Last time composition was regenerated
-const regenInterval = 60000; // Regeneration interval in milliseconds (60 seconds)
+const regenInterval = 30000; // Regeneration interval in milliseconds (60 seconds)
 
 // Vortex variables
 let vortexStrength = 0.01;  // Very gentle spinning
