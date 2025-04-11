@@ -11,6 +11,9 @@ let springStrength = 0.003; // Weak springs
 let windStrength = 0.0;     // No wind
 let windVariation = 0.0;
 let mouseInfluence = 0.05;  // Subtle mouse influence
+let autoRegenerate = true; // Whether to automatically regenerate composition
+let lastRegenTime = 0; // Last time composition was regenerated
+const regenInterval = 60000; // Regeneration interval in milliseconds (60 seconds)
 
 // Vortex variables
 let vortexStrength = 0.01;  // Very gentle spinning
@@ -223,8 +226,13 @@ function setup() {
     });
 
     generateComposition();
+    lastRegenTime = millis();
     initializeVortexPoints();
     createConnections(); 
+    
+    // Initialize timer with current time
+    lastRegenTime = millis();
+    
     loop();
 }
 
@@ -235,6 +243,15 @@ function windowResized() {
 
 
 function draw() {
+    // Check if auto-regenerate is enabled and if enough time has passed
+    if (autoRegenerate && millis() - lastRegenTime > regenInterval) {
+        console.log('Auto-regenerating composition');
+        generateComposition();
+        initializeVortexPoints();
+        createConnections();
+        lastRegenTime = millis(); // Reset timer
+    }
+    
     background(251);
     circles.sort((a, b) => a.y - b.y);
     
@@ -877,6 +894,12 @@ function keyPressed(event) {
         console.log('Physics mode:', enablePhysics ? 'enabled' : 'disabled');
         return false;
     }
+  if (keyCode === 84) {  // 'T' key for Toggle auto-regeneration
+    autoRegenerate = !autoRegenerate;
+    console.log('Auto-regenerate:', autoRegenerate ? 'enabled' : 'disabled');
+    lastRegenTime = millis(); // Reset timer whenever toggled
+    return false;
+}
     
     console.log('Key pressed:', keyCode);
     
