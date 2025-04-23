@@ -13,7 +13,7 @@ let windVariation = 0.0;
 let mouseInfluence = 0.05;  // Subtle mouse influence
 let autoRegenerate = true; // Whether to automatically regenerate composition
 let lastRegenTime = 0; // Last time composition was regenerated
-const regenInterval = 30000; // Regeneration interval in milliseconds (60 seconds)
+const regenInterval = 60000; // Regeneration interval in milliseconds (60 seconds)
 
 // Vortex variables
 let vortexStrength = 0.01;  // Very gentle spinning
@@ -257,10 +257,14 @@ function draw() {
     
     if (!isDragging) {
         circles.forEach(circle => {
-            circle.rotationAngle += circle.rotationSpeed * circle.rotationDirection;
+            // Update the orbit angle for circles with orbiting elements
+            if (circle.orbitEnabled) {
+                circle.orbitAngle += circle.orbitDirection * circle.orbitSpeed;
+            }
         });
     }
-      updatePhysics(); 
+    
+    updatePhysics(); 
     
     if (selectedCircle) {
         if (keyIsDown(UP_ARROW)) {
@@ -284,6 +288,7 @@ function draw() {
     drawCircleMasks();
     drawCircleFills();
     drawInnerCircles();
+    drawOrbitingCircles(); // New function to draw the orbiting circles
     drawOutlines();
     
     if (selectedCircle) {
@@ -292,9 +297,121 @@ function draw() {
         strokeWeight(3);
         ellipse(selectedCircle.x, selectedCircle.y, selectedCircle.r * 2 + 1);
     }
-  drawHelpSystem();
+    drawHelpSystem();
+}
+// New function to draw the orbiting circles
+
+// First, add a new property to the circle creation function
+function createCircle(x, y, r, zoneName) {
+    let circle = {
+        x, 
+        y, 
+        r,
+        // Keep the rotation angle for the inner circle static (no rotation)
+        rotationAngle: 0,
+        rotationSpeed: random(minRotationSpeed, maxRotationSpeed),
+        rotationDirection: random() < 0.5 ? 1 : -1,
+        innerCircleRatio: random(minInnerCircleRatio, maxInnerCircleRatio),
+        
+        // Add orbiting circle properties
+        orbitEnabled: true,
+        orbitAngle: random(TWO_PI),   // Starting angle for the orbit
+        orbitSpeed: random(0.001, 0.01), // Speed of rotation
+        orbitDirection: random() > 0.5 ? 1 : -1, // Direction of rotation
+        
+        // Add randomized size for the orbiting circle (10-90% of the host circle)
+        orbitingCircleRatio: random(0.1, 0.9),
+        
+        // Other properties remain the same
+        legType: (() => {
+            const r = random();
+            if (r < 0.35) return LEG_TYPES.SINGLE_STRAIGHT;
+            if (r < 0.70) return LEG_TYPES.DOUBLE_STRAIGHT;
+            if (r < 0.78) return LEG_TYPES.CURVED_LEFT_CENTER;
+            if (r < 0.86) return LEG_TYPES.CURVED_CENTER_RIGHT;
+            if (r < 0.93) return LEG_TYPES.CURVED_LEFT_RIGHT;
+            return LEG_TYPES.NONE;
+        })(),
+        
+        // Physics properties 
+        vx: 0,          
+        vy: 0,          
+        mass: r * r,    
+        fixed: false,   
+        connections: [] 
+    };
+    
+    // Select color from current palette's zone-specific colors
+    let zonePalette = currentPalette[zoneName];
+    let colorIndex = floor(random(zonePalette.length));
+    let [r_, g, b] = zonePalette[colorIndex];
+    circle.color = color(r_, g, b);
+    
+    // Initialize legs based on type
+    updateCircleLegs(circle);
+    
+    return circle;
 }
 
+// Then update the drawOrbitingCircles function to use this new property
+function drawOrbitingCircles() {
+    for (let circle of circles) {
+        if (!circle.orbitEnabled) continue;
+        
+        // Calculate the available radius within the colored circle
+        let availableRadius = circle.r;
+        
+        // Use the orbitingCircleRatio to determine the size of the orbiting circle
+        // This will be 10-90% of the main circle's radius (not diameter)
+        let orbitingCircleRadius = availableRadius * circle.orbitingCircleRatio;
+        
+        // Ensure the orbiting circle doesn't exceed the parent circle boundary
+        // by limiting how far it can travel from the center
+        let maxTravelDistance = availableRadius - orbitingCircleRadius;
+        
+        // If maxTravelDistance is negative, adjust orbiting circle size
+        if (maxTravelDistance < 0) {
+            orbitingCircleRadius = availableRadius * 0.4; // Fallback to 40% of parent
+            maxTravelDistance = availableRadius - orbitingCircleRadius;
+        }
+        
+        // Calculate the position of the orbiting circle
+        // Use a percentage of the maxTravelDistance to ensure it stays within bounds
+        let orbitDistance = maxTravelDistance * 0.8; // Using 80% of max to ensure it stays inside
+        let orbitX = circle.x + cos(circle.orbitAngle) * orbitDistance;
+        let orbitY = circle.y + sin(circle.orbitAngle) * orbitDistance;
+        
+        // Calculate shadow properties for depth
+        const vanishX = width/2;
+        const vanishY = height/2;
+        const maxDistance = dist(0, 0, width, height);
+        let distance = dist(circle.x, circle.y, vanishX, vanishY);
+        let depthScale = map(distance, 0, maxDistance, 0, 1);
+        let shadowOffset = (orbitingCircleRadius * 0.9) * depthScale;
+        
+        // Calculate shadow direction
+        let dirX = vanishX - orbitX;
+        let dirY = vanishY - orbitY;
+        let length = sqrt(dirX * dirX + dirY * dirY);
+        let normX = dirX / length;
+        let normY = dirY / length;
+        
+        // Draw the shadow for the orbiting circle
+        noStroke();
+        fill(0, 120); // Semi-transparent black
+        ellipse(
+            orbitX + (normX * shadowOffset),
+            orbitY + (normY * shadowOffset),
+            orbitingCircleRadius * 2 // Diameter = radius * 2
+        );
+        
+        // Draw the white orbiting circle
+        fill(255);
+        stroke(0);
+        strokeWeight(3);
+        ellipse(orbitX, orbitY, orbitingCircleRadius * 2); // Diameter = radius * 2
+    }
+}
 // Add this function to initialize the vortex points
 function initializeVortexPoints() {
   vortexPoints = [];
@@ -331,6 +448,57 @@ function generateComposition() {
     }
 }
 
+function drawRingHoles() {
+    for (let circle of circles) {
+        if (!circle.ringHoleEnabled) continue;
+        
+        // Calculate inner circle diameter based on ratio
+        let innerDiameter = circle.r * 2 * circle.innerCircleRatio;
+        
+        // Calculate ring thickness
+        let ringThickness = (circle.r * 2 - innerDiameter) / 2;
+        
+        // Calculate the radius to the center of the ring thickness
+        let ringRadius = innerDiameter/2 + ringThickness/2;
+        
+        // Calculate the position of the orbiting circle
+        let orbitX = circle.x + cos(circle.ringHoleAngle) * ringRadius;
+        let orbitY = circle.y + sin(circle.ringHoleAngle) * ringRadius;
+        
+        // Calculate shadow properties for depth
+        const vanishX = width/2;
+        const vanishY = height/2;
+        const maxDistance = dist(0, 0, width, height);
+        let distance = dist(circle.x, circle.y, vanishX, vanishY);
+        let depthScale = map(distance, 0, maxDistance, 0, 1);
+        
+        // Calculate shadow direction
+        let dirX = vanishX - orbitX;
+        let dirY = vanishY - orbitY;
+        let length = sqrt(dirX * dirX + dirY * dirY);
+        let normX = dirX / length;
+        let normY = dirY / length;
+        
+        // Draw the shadow for the orbiting circle
+        noStroke();
+        fill(0, 120); // Semi-transparent black for shadow
+        
+        // Size the orbiting circle based on ring thickness
+        let orbitSize = min(ringThickness, circle.r * 0.15);
+        
+        ellipse(
+            orbitX + (normX * (orbitSize * 0.5 * depthScale)),
+            orbitY + (normY * (orbitSize * 0.5 * depthScale)),
+            orbitSize
+        );
+        
+        // Draw the white orbiting circle
+        fill(255);
+        stroke(0);
+        strokeWeight(3);
+        ellipse(orbitX, orbitY, orbitSize);
+    }
+}
 
 function generateZoneCircles(zone, count) {
     let zoneCircles = [];
@@ -357,10 +525,22 @@ function createCircle(x, y, r, zoneName) {
         x, 
         y, 
         r,
-        rotationAngle: random(TWO_PI),
+        // Keep the rotation angle for the inner circle static (no rotation)
+        rotationAngle: 0,
         rotationSpeed: random(minRotationSpeed, maxRotationSpeed),
         rotationDirection: random() < 0.5 ? 1 : -1,
         innerCircleRatio: random(minInnerCircleRatio, maxInnerCircleRatio),
+        
+        // Add orbiting circle properties
+        orbitEnabled: true,
+        orbitAngle: random(TWO_PI),   // Starting angle for the orbit
+        orbitSpeed: random(0.001, 0.01), // Speed of rotation
+        orbitDirection: random() > 0.5 ? 1 : -1, // Direction of rotation
+        
+        // Add randomized size for the orbiting circle (10-90% of the host circle)
+        orbitingCircleRatio: random(0.1, 0.9),
+        
+        // Other properties remain the same
         legType: (() => {
             const r = random();
             if (r < 0.35) return LEG_TYPES.SINGLE_STRAIGHT;
@@ -370,12 +550,13 @@ function createCircle(x, y, r, zoneName) {
             if (r < 0.93) return LEG_TYPES.CURVED_LEFT_RIGHT;
             return LEG_TYPES.NONE;
         })(),
-        // Add these physics properties here
-        vx: 0,          // Velocity X
-        vy: 0,          // Velocity Y
-        mass: r * r,    // Mass based on size (r²)
-        fixed: false,   // Whether the circle position is fixed
-        connections: [] // Array to store connections to other circles
+        
+        // Physics properties 
+        vx: 0,          
+        vy: 0,          
+        mass: r * r,    
+        fixed: false,   
+        connections: [] 
     };
     
     // Select color from current palette's zone-specific colors
@@ -539,53 +720,6 @@ function drawCircleFills() {
 }
 
 function drawInnerCircles() {
-    noStroke();
-    fill(0);
-    
-    for (let circle of circles) {
-        let innerRadius = circle.r * circle.innerCircleRatio;
-        let difference = circle.r - innerRadius;
-        
-        let offsetX = cos(circle.rotationAngle) * difference;
-        let offsetY = sin(circle.rotationAngle) * difference;
-        
-        const vanishX = width/2;  // Updated to use dynamic width
-        const vanishY = height/2; // Updated to use dynamic height
-        const maxDistance = dist(0, 0, width, height);
-        let distance = dist(circle.x, circle.y, vanishX, vanishY);
-        let depthScale = map(distance, 0, maxDistance, 0, 1);
-        let shadowOffset = (innerRadius * 1.5) * depthScale;
-        
-        let dirX = vanishX - (circle.x + offsetX);
-        let dirY = vanishY - (circle.y + offsetY);
-        let length = sqrt(dirX * dirX + dirY * dirY);
-        let normX = dirX / length;
-        let normY = dirY / length;
-        
-        ellipse(
-            circle.x + offsetX + (normX * shadowOffset),
-            circle.y + offsetY + (normY * shadowOffset),
-            innerRadius * 2
-        );
-    }
-    
-    stroke(0);
-    strokeWeight(3);
-    fill(255);
-    
-    for (let circle of circles) {
-        let innerRadius = circle.r * circle.innerCircleRatio;
-        let difference = circle.r - innerRadius;
-        
-        let offsetX = cos(circle.rotationAngle) * difference;
-        let offsetY = sin(circle.rotationAngle) * difference;
-        
-        ellipse(
-            circle.x + offsetX,
-            circle.y + offsetY,
-            innerRadius * 2
-        );
-    }
 }
 
 function drawOutlines() {
@@ -892,6 +1026,20 @@ function keyPressed(event) {
     if (keyCode === 32) {  // Space bar
         enablePhysics = !enablePhysics;  // Toggle physics mode
         console.log('Physics mode:', enablePhysics ? 'enabled' : 'disabled');
+        return false;
+    }
+      if (keyCode === 79) {  // 'O' key
+        if (selectedCircle) {
+            selectedCircle.orbitEnabled = !selectedCircle.orbitEnabled;
+            if (selectedCircle.orbitEnabled) {
+                // Reset orbiting circle properties when enabling
+                selectedCircle.orbitAngle = random(TWO_PI);
+                selectedCircle.orbitSpeed = random(0.001, 0.01);
+                selectedCircle.orbitDirection = random() > 0.5 ? 1 : -1;
+            }
+            console.log('Orbiting circle:', selectedCircle.orbitEnabled ? 'enabled' : 'disabled');
+            redraw();
+        }
         return false;
     }
   if (keyCode === 84) {  // 'T' key for Toggle auto-regeneration
