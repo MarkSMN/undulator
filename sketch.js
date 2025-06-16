@@ -14,7 +14,7 @@
     let windVariation = 0.0;
     let mouseInfluence = 0.00;  // Subtle mouse influence
     
-    let autoRegenerate = true; // Whether to automatically regenerate       composition
+    let autoRegenerate = false; // Whether to automatically regenerate       composition
     let lastRegenTime = 0; // Last time composition was regenerated
     const regenInterval = 60000; // Regeneration interval in milliseconds (60 seconds)
 
