@@ -50,7 +50,7 @@
     let gravitySmoothingFactor = 1.3; // Additional damping when close to gravity point
 
     // Add this near the top of your code with the other physics variables
-    let enablePhysics = true;  // Physics starts disabled and can be toggled with spacebar
+    let enablePhysics = false;  // Physics starts disabled and can be toggled with spacebar
     // Key constants
     const DELETE = 46;
     const BACKSPACE = 8;
